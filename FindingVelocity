@@ -1,0 +1,108 @@
+clear
+% File name
+filename = 'Data 0904.xlsx';
+
+%% ===== Read Gyroscope Data (Sheet 4) =====
+range = 'C:F';   % Columns C through F
+gyroData = readmatrix(filename, 'Sheet', 4, 'Range', range);
+
+% Assign columns
+time_gyr = gyroData(2:end,1);
+Gyrx     = gyroData(2:end,2);
+Gyry     = gyroData(2:end,3);
+Gyrz     = gyroData(2:end,4);
+
+%% ===== Read Accelerometer Data (Sheet 5) =====
+accData = readmatrix(filename, 'Sheet', 5, 'Range', range);
+
+% Assign columns
+time_acc = accData(2:end,1);
+Accx_mg     = accData(2:end,2);
+Accy_mg     = accData(2:end,3);
+Accz_mg     = accData(2:end,4);
+
+g = 9.81;           % gravitational acceleration in m/s^2
+mg2ms2 = g/1000;
+
+Accx = Accx_mg * mg2ms2;
+Accy = Accy_mg * mg2ms2;
+Accz = Accz_mg * mg2ms2;
+
+%% ==== Combine into one force ====
+
+FAcc = sqrt(Accx.^2 + Accy.^2 + Accz.^2)-9.81;
+FGyr = sqrt(Gyrx.^2 + Gyry.^2 + Gyrz.^2)-9.81;
+
+%% ==== Filter one sided suitable for sample by sample ====
+
+fs = 52;
+dt = 1/fs;        
+fc = 0.5;                   
+[b, a] = butter(2, fc/(fs/2), 'low');
+
+zi = zeros(max(length(a), length(b)) - 1, 1);
+N = length(FAcc);
+Acc_filt = zeros(N,1);
+
+for i = 1:N
+    [Acc_filt(i), zi] = filter(b, a, FAcc(i), zi);
+end
+
+%% ==== Eliminate phase lag ====
+
+[gd, w] = grpdelay(b, a, 128, fs);  % gd in samples vs frequency
+delay_samples = round(mean(gd));    % average delay in samples
+delay_time = delay_samples / fs;    % convert to seconds
+
+% --- Compensate delay ---
+Acc_filtshifted = [Acc_filt((delay_samples+1):end); zeros(delay_samples,1)];
+
+%% ==== Calculate and clean up the velocity ====
+
+Velo = cumtrapz(time_acc,Acc_filtshifted);
+
+fs = 52;              
+fc = 0.4;             
+[b,a] = butter(2, fc/(fs/2), 'high');  
+
+zi = zeros(max(length(a), length(b)) - 1, 1);
+N2 = length(Velo);
+Velo_filt = zeros(N2,1);
+
+for i = 1:N2
+    [Velo_filt(i), zi] = filter(b, a, Velo(i), zi);
+end
+
+[gd, w] = grpdelay(b, a, 128, fs);  % gd in samples vs frequency
+delay_samples = round(mean(gd));    % average delay in samples
+delay_time = delay_samples / fs;    % convert to seconds
+
+Velo_filtshifted = [Velo_filt((delay_samples+1):end); zeros(delay_samples,1)];
+
+%% ==== Plots ====
+figure;
+plot(time_acc, Acc_filtshifted, 'r', 'LineWidth', 1.5);
+ylabel('Acceleration (m/s^2)');
+title('Accelerometer Data vs Time');
+grid on;
+
+figure;
+plot(time_acc, Velo, 'b', 'LineWidth', 1.5);
+xlabel('Time (s)');
+ylabel('Velocity (m/s)'); % adjust unit as needed
+title('Velocity Data vs Time');
+grid on;
+
+figure;
+plot(time_acc, Velo_filt, 'b', 'LineWidth', 1.5);
+xlabel('Time (s)');
+ylabel('Velocity (m/s)'); % adjust unit as needed
+title('Filtered Velocity Data vs Time');
+grid on;
+
+figure;
+plot(time_acc, Velo_filtshifted, 'm', 'LineWidth', 1.5);
+xlabel('Time (s)');
+ylabel('Velocity (m/s)'); % adjust unit as needed
+title('*clean* Velocity Data vs Time');
+grid on;
