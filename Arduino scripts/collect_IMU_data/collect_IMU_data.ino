@@ -1,131 +1,98 @@
-#include <Wire.h>
-#include <LSM6DS3.h>
-#include "Seeed_FS.h"
-#include <Seeed_SFUD.h>
+#include <Arduino.h>
+#include "LSM6DS3.h"
+#include <SPI.h>
+#include <Adafruit_SPIFlash.h>
 
+LSM6DS3 lsm6ds3;
 
-LSM6DS3 myIMU(I2C_MODE, 0x6A); // I2C adres van de IMU
-File dataFile;
+// SPI flash setup
+#define FLASH_CS 10
+Adafruit_FlashTransport_SPI flashTransport(FLASH_CS, &SPI);
+Adafruit_SPIFlash flash(&flashTransport);
 
-const float accelerationThreshold = 1; // G-kracht drempel
-const unsigned long loggingDuration = 7000; // loggingtijd in milliseconden (7 sec)
-
-bool logging = false;
-unsigned long startTime = 0;
+unsigned long writeAddr = 0;
+const unsigned long FLASH_SIZE = 0x400000; // adjust to your chip
 
 void setup() {
   Serial.begin(115200);
   while (!Serial);
-  delay(3000);     // extra tijd om de monitor te openen
-  Serial.println("Wacht op beweging...");
 
+  Serial.println("Logger start (IMU + Adafruit SPIFlash)");
 
-  // Start IMU
-  int imuStatus = myIMU.begin();
-  Serial.print("IMU init status: "); Serial.println(imuStatus);
-  if (imuStatus != 0) {
-    Serial.println("IMU niet gevonden");
-    while (1);
+  if (!lsm6ds3.begin()) {
+    Serial.println("IMU init FAILED");
+    while (1) delay(1000);
   }
+  Serial.println("IMU init OK");
 
-  // Start QSPI flash
-  Serial.println("Start QSPI init...");
-  bool flashStatus = SFUD.begin();
-  Serial.print("QSPI status: "); Serial.println(flashStatus);
-
-  if (!flashStatus) {
-    Serial.println("QSPI Flash init mislukt");
-    while (1);
+  if (!flash.begin()) {
+    Serial.println("Flash init FAILED");
+    while (1) delay(1000);
   }
+  Serial.println("Flash init OK");
 
-  if (SFUD.exists("imu_log.csv")) {
-    Serial.println("Bestand gevonden. Inhoud:");
-    File f = SFUD.open("imu_log.csv", FILE_READ);
-    while (f.available()) {
-      Serial.write(f.read());
+  // Erase first sector for fresh logging
+  flash.eraseSector(0);
+  writeAddr = 0;
+
+  Serial.println("Commands: dump | resetlog");
+}
+
+void dumpFlash() {
+  Serial.println("=== FLASH DUMP START ===");
+  const size_t CHUNK = 64;
+  uint8_t buf[CHUNK];
+  unsigned long addr = 0;
+
+  while (addr < writeAddr) {
+    size_t readLen = min(CHUNK, writeAddr - addr);
+    flash.readBuffer(addr, buf, readLen);
+    for (size_t i = 0; i < readLen; i++) {
+      Serial.write(buf[i]);
     }
-    f.close();
-  } else {
-    Serial.println("Geen logbestand gevonden.");
+    addr += readLen;
   }
-
-
-  //Serial.println("Wacht op beweging...");
+  Serial.println("\n=== FLASH DUMP END ===");
 }
 
 void loop() {
-  float aX = myIMU.readFloatAccelX();
-  float aY = myIMU.readFloatAccelY();
-  float aZ = myIMU.readFloatAccelZ();
-  float aMagnitude = sqrt(aX * aX + aY * aY + aZ * aZ);
-
-  Serial.print("aMagnitude: ");
-  Serial.println(aMagnitude, 3);
-
-  if (!logging) {
-    // Lees acceleratie
-    float aX = myIMU.readFloatAccelX();
-    float aY = myIMU.readFloatAccelY();
-    float aZ = myIMU.readFloatAccelZ();
-    Serial.print("aX: "); Serial.print(aX, 3);
-    Serial.print(" aY: "); Serial.print(aY, 3);
-    Serial.print(" aZ: "); Serial.println(aZ, 3);
-
-
-    float aSum = fabs(aX) + fabs(aY) + fabs(aZ);
-    Serial.print("aMagnitude: ");
-    Serial.println(aSum, 3);
-
-
-    if (aSum >= accelerationThreshold) {
-      Serial.println("Beweging gedetecteerd! Start logging...");
-      startTime = millis();
-      logging = true;
-
-      // Maak nieuw bestand aan
-      dataFile = SFUD.open("imu_log.csv", FILE_WRITE);
-      if (dataFile) {
-        dataFile.println("aX,aY,aZ,gX,gY,gZ");
-      }
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+    if (cmd.equalsIgnoreCase("dump")) {
+      dumpFlash();
+    } else if (cmd.equalsIgnoreCase("resetlog")) {
+      flash.eraseSector(0);
+      writeAddr = 0;
+      Serial.println("Flash reset OK");
     }
   }
 
-  if (logging && millis() - startTime <= loggingDuration) {
-    // Verzamel en log data
-    float aX = myIMU.readFloatAccelX();
-    float aY = myIMU.readFloatAccelY();
-    float aZ = myIMU.readFloatAccelZ();
-    float gX = myIMU.readFloatGyroX();
-    float gY = myIMU.readFloatGyroY();
-    float gZ = myIMU.readFloatGyroZ();
+  static unsigned long lastMs = 0;
+  unsigned long now = millis();
+  const unsigned long intervalMs = 10; // ~100 Hz
 
-    if (dataFile) {
-      dataFile.print(aX, 3); dataFile.print(",");
-      dataFile.print(aY, 3); dataFile.print(",");
-      dataFile.print(aZ, 3); dataFile.print(",");
-      dataFile.print(gX, 3); dataFile.print(",");
-      dataFile.print(gY, 3); dataFile.print(",");
-      dataFile.println(gZ, 3);
+  if (now - lastMs >= intervalMs) {
+    lastMs = now;
+
+    float ax = lsm6ds3.readFloatAccelX();
+    float ay = lsm6ds3.readFloatAccelY();
+    float az = lsm6ds3.readFloatAccelZ();
+    float gx = lsm6ds3.readFloatGyroX();
+    float gy = lsm6ds3.readFloatGyroY();
+    float gz = lsm6ds3.readFloatGyroZ();
+
+    char line[128];
+    int len = snprintf(line, sizeof(line),
+                       "%lu,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n",
+                       now, ax, ay, az, gx, gy, gz);
+
+    if (writeAddr + len < FLASH_SIZE) {
+      flash.writeBuffer(writeAddr, (uint8_t*)line, len);
+      writeAddr += len;
+    } else {
+      Serial.println("Flash full!");
+      while (1) delay(1000);
     }
-
-    delay(10); // sample rate ~100Hz
-  }
-
-  if (logging && millis() - startTime > loggingDuration) {
-    logging = false;
-    if (dataFile) {
-      dataFile.close();
-    }
-    Serial.println("Logging voltooid. Data uitlezen...\n");
-
-    // Lees het bestand terug
-    dataFile = SFUD.open("imu_log.csv", FILE_READ);
-    if (dataFile) {
-      while (dataFile.available()) {
-        Serial.write(dataFile.read());
-      }
-      dataFile.close();
-    }
-    Serial.println("\nWacht op nieuwe beweging...");
   }
 }
