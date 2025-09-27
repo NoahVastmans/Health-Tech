@@ -5,7 +5,7 @@
 BMI270 imu;
 
 // ==== Parameters ====
-const int buzzerPin = 2;
+const int buzzerPin = 5;
 const float g = 9.81;
 const float fs = 52.0;        // Sampling frequency (Hz)
 const float dt = 1.0 / fs;    

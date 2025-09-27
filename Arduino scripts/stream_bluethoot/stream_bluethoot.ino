@@ -7,28 +7,20 @@ LSM6DS3 imu(I2C_MODE, 0x6A); // I²C mode, default address 0x6A
 BLEService imuService("180A");
 BLECharacteristic imuDataChar("2A57", BLERead | BLENotify, 32);
 
+
 void setup() {
-  Serial.begin(115200);
-  while (!Serial);
 
-  if (imu.begin() != 0) {  // init I²C
-    Serial.println("Failed to initialize IMU!");
-    while(1);
-  }
-  Serial.println("IMU ready");
-
-  if (!BLE.begin()) {
-    Serial.println("Failed to initialize BLE!");
-    while(1);
-  }
-  
+  delay(200);
+  BLE.begin();
   BLE.setLocalName("XIAO_IMU");
   BLE.setAdvertisedService(imuService);
   imuService.addCharacteristic(imuDataChar);
   BLE.addService(imuService);
-  //imuDataChar.setValue((uint8_t*)0, 18);
   BLE.advertise();
   Serial.println("BLE ready");
+  imu.begin();
+
+
 }
 
 // Helper to round float to 3 decimals and send via BLE
