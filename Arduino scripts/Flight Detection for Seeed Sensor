@@ -1,5 +1,5 @@
-#include <LSM6DS3.h> //needs minor modification
-#include <MadgwickAHRS.h> //needs minor modifications
+#include <LSM6DS3.h>
+#include <MadgwickAHRS.h>
 #include <Wire.h>
 
 #undef DEG_TO_RAD
@@ -8,10 +8,9 @@
 LSM6DS3 IMU(I2C_MODE, 0x6A);
 Madgwick filter;
 
-const int soundTriggerPin = 7; //EDIT---------------------------------------------------
+const int soundTriggerPin = 5; // Buzzer pin
 
-
-enum FlightStage {
+enum FlightStage { // Flight stages follow sequential order of events
     PRE_FLIGHT,
     THROWING,
     IN_AIR,
@@ -21,22 +20,31 @@ enum FlightStage {
 
 FlightStage currentStage = PRE_FLIGHT;
 
-float ax, ay, az;
-float gx, gy, gz;
-float verticalVelocity = 0.0;
-float prevVerticalVelocity = 0.0;
+// IMU sensor data
+float ax, ay, az; // Raw acceleration (m/s²)
+float gx, gy, gz; // Raw gyroscope (rad/s)
+
+// Velocity tracking
+float verticalVelocity = 0.0;    // Current vertical velocity (m/s)
+float prevVerticalVelocity = 0.0; // Previous vertical velocity (m/s)
+
+// Timing
 float timeStep = 0.0;
 unsigned long previousTime = 0;
 
+// Filtering
 float filteredAz = 0.0;
-const float alpha = 0.5; // Low-pass filter coefficient
+const float alpha = 0.5; // Low-pass filter coefficient for free fall detection
 
+// Thresholds for flight stages (may need tuning after data collection)
+const float THROWING_ACCEL_THRESHOLD = 10.0;  // m/s²
+const float CATCH_ACCEL_THRESHOLD = 15.0;      // m/s²
+const float GRAVITY_THRESHOLD = 2.0;           // m/s²
 
-const float THROWING_ACCEL_THRESHOLD = 10.0;
-const float CATCH_ACCEL_THRESHOLD = 15.0;
-const float GRAVITY_THRESHOLD = 2.0;
+// State tracking
+bool apexSoundTriggered = false;
 
-int config_free_fall_detect(void) {
+int config_free_fall_detect(void) {//seed sensor documentation, uses a simple low pass filter, and works to quickly identify free falling (aka ball in the air)
     uint8_t error = 0;
     uint8_t dataToWrite = 0;
 
@@ -51,40 +59,60 @@ int config_free_fall_detect(void) {
 }
 
 void setup() {
-    Serial.begin(9600);
-    while (!Serial);
+    Serial.begin(115200);//updated noah code
+    while (!Serial); // Wait for serial connection
 
-    if (!IMU.begin()) {
+    // Initialize IMU
+    if (IMU.begin() != 0) {
         Serial.println("Failed to initialize IMU!");
-        while (1);
+        while(1);
     }
+    Serial.println("IMU ready");
 
-    if (0 != config_free_fall_detect()) {
-        Serial.println("Fail to configure free-fall detection!");
+    // Configure free-fall detection
+    if (config_free_fall_detect() != 0) {
+        Serial.println("Failed to configure free-fall detection!");
         while (1);
     } else {
-        Serial.println("Success to configure IMU!");
+        Serial.println("IMU configured successfully!");
     }
 
-    filter.begin(100.0);
+    // Initialize Madgwick AHRS filter
+    filter.begin(100.0); // 100 Hz update rate
     Serial.println("Madgwick filter initialized.");
+    
+    // Setup complete
     Serial.println("System ready. Stage: PRE-FLIGHT");
-
     previousTime = millis();
-
+    
+    // Configure buzzer pin
     pinMode(soundTriggerPin, OUTPUT);
 }
 
 void loop() {
-    digitalWrite(soundTriggerPin, LOW); // Ensure it's off initially
+    // 1. Read raw sensor data
     readSensors();
+    
+    // 2. Update orientation filter with IMU data
     updateFilter();
+    
+    // 3. Calculate time step for integration
     computeTimeStep();
+    
+    // 4. Get gravity-corrected vertical acceleration
     float verticalAccel = getVerticalAcceleration();
+    
+    // 5. Apply low-pass filter for free-fall detection
     filteredAz = alpha * verticalAccel + (1 - alpha) * filteredAz;
 
+    // 6. Integrate acceleration to get velocity (centralized)
+    updateVerticalVelocity(verticalAccel);
+
+    // 7. Check hardware free-fall interrupt
     bool freeFallDetected = checkFreeFallInterrupt();
-    handleFlightStage(filteredAz, freeFallDetected);
+    
+    // 8. Update flight stage based on sensor data
+    handleFlightStage(filteredAz, freeFallDetected); // Use filtered value for stage detection
 }
 
 void readSensors() {
@@ -125,13 +153,33 @@ bool checkFreeFallInterrupt() {
     return (readDataByte & 0x20);
 }
 
+void updateVerticalVelocity(float verticalAccel) {
+    // Only integrate velocity when we're actively tracking motion
+    if (currentStage == THROWING || currentStage == IN_AIR || currentStage == APEX) {
+        prevVerticalVelocity = verticalVelocity;
+        float netAccel = verticalAccel - 9.81; // Net acceleration (removing gravity)
+        verticalVelocity += netAccel * timeStep;
+        
+        // Debug output (can be removed in production)
+        Serial.print("Stage: ");
+        Serial.print(currentStage);
+        Serial.print(" | Vel: ");
+        Serial.print(verticalVelocity, 2);
+        Serial.print(" m/s | NetAccel: ");
+        Serial.print(netAccel, 2);
+        Serial.print(" m/s² | dt: ");
+        Serial.println(timeStep, 4);
+    }
+}
+
 void handleFlightStage(float verticalAccel, bool freeFallDetected) {
     switch (currentStage) {
         case PRE_FLIGHT:
             if (abs(verticalAccel) > THROWING_ACCEL_THRESHOLD) {
                 currentStage = THROWING;
                 Serial.println("Stage: THROWING");
-                verticalVelocity = 0.0;
+                verticalVelocity = 0.0; // Reset velocity at start of throw
+                apexSoundTriggered = false; // Reset for new throw
             }
             break;
 
@@ -139,16 +187,19 @@ void handleFlightStage(float verticalAccel, bool freeFallDetected) {
             if (freeFallDetected || abs(verticalAccel - 9.81) < GRAVITY_THRESHOLD) {
                 currentStage = IN_AIR;
                 Serial.println("Stage: IN-AIR");
+                Serial.print("Release velocity: ");
+                Serial.print(verticalVelocity);
+                Serial.println(" m/s");
             }
             break;
 
         case IN_AIR:
-            prevVerticalVelocity = verticalVelocity;
-            verticalVelocity += (verticalAccel - 9.81) * timeStep;
-
-            if (prevVerticalVelocity > 0 && verticalVelocity <= 0) {
+            if (prevVerticalVelocity > 2.0 && verticalVelocity <= -2.0) {
                 currentStage = APEX;
                 Serial.println("Stage: APEX");
+                Serial.print("Apex velocity: ");
+                Serial.print(verticalVelocity);
+                Serial.println(" m/s");
             }
             break;
 
@@ -156,18 +207,20 @@ void handleFlightStage(float verticalAccel, bool freeFallDetected) {
             if (abs(verticalAccel) > CATCH_ACCEL_THRESHOLD) {
                 currentStage = CATCH;
                 Serial.println("Stage: CATCH");
-            } else {
-                // Trigger sound at apex
+            } else if (!apexSoundTriggered) {
+                // Trigger sound at apex (only once per flight)
                 Serial.println("Triggering sound at APEX");
-                digitalWrite(soundTriggerPin, HIGH);
-                delay(100); // Sound duration (adjust as needed)
-                digitalWrite(soundTriggerPin, LOW);
+                tone(soundTriggerPin, 1000, 200); // 1 kHz tone for 200ms
+                apexSoundTriggered = true;
             }
             break;
+            
         case CATCH:
             Serial.println("Flight sequence complete. Resetting...");
             delay(2000);
             currentStage = PRE_FLIGHT;
+            verticalVelocity = 0.0; // Reset for next throw
+            apexSoundTriggered = false; // Reset for next flight
             break;
     }
 }
