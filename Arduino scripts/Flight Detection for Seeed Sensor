@@ -160,7 +160,7 @@ void updateVerticalVelocity(float verticalAccel) {
         float netAccel = verticalAccel - 9.81; // Net acceleration (removing gravity)
         verticalVelocity += netAccel * timeStep;
         
-        // Debug output (can be removed in production)
+        // Debug output
         Serial.print("Stage: ");
         Serial.print(currentStage);
         Serial.print(" | Vel: ");
