@@ -1,13 +1,9 @@
 #include <Wire.h>
 #include <LSM6DS3.h>
-#include <ArduinoBLE.h>
 
 // ==== IMU ====
 LSM6DS3 imu(I2C_MODE, 0x6A);
 
-// ==== Bluetooth ====
-BLEService imuService("180A");
-BLECharacteristic imuDataChar("2A57", BLERead | BLENotify, 32);
 
 // ==== Parameters ====
 const int buzzerPin = 5;
@@ -42,16 +38,6 @@ const unsigned long buzzerDuration = 1000; // milliseconds
 
 
 void setup() {
-  // Initialize Bluetooth
-  delay(200);
-  BLE.begin();
-  BLE.setLocalName("XIAO_IMU");
-  BLE.setAdvertisedService(imuService);
-  imuService.addCharacteristic(imuDataChar);
-  BLE.addService(imuService);
-  BLE.advertise();
-  //Serial.println("BLE ready");
-  
   delay(500);
   Serial.begin(115200);
   while (!Serial) {
@@ -77,7 +63,6 @@ void setup() {
 }
 
 void loop() {
-  BLE.poll();
 
   static unsigned long lastMicros = 0;
   unsigned long now = micros();
@@ -123,7 +108,7 @@ void loop() {
         Serial.println(apex_time, 3);
 
         // Buzzer
-        //tone(buzzerPin, 1000); // start tone
+        tone(buzzerPin, 1000); // start tone
         buzzerStartTime = millis();
         buzzerActive = true;
       }
@@ -131,16 +116,13 @@ void loop() {
     velo_filt_prev = velocity_filt;
 
     //--- Debug ---
-    // Serial.print("t=");
-    // Serial.print(current_time, 2);
-    // Serial.print("  Velo_filt=");
-    // Serial.println(velocity_filt, 3);
-    char buf[32];  // plenty for 3 floats
-    snprintf(buf, sizeof(buf), "%.5f", velocity_filt);
-    imuDataChar.setValue(buf);
+    Serial.print("t=");
+    Serial.print(current_time, 2);
+    Serial.print("  Velo_filt=");
+    Serial.println(velocity_filt, 3);
 
     if (buzzerActive && millis() - buzzerStartTime >= buzzerDuration) {
-      //noTone(buzzerPin);
+      noTone(buzzerPin);
       buzzerActive = false;
     }
   }
