@@ -62,8 +62,6 @@ void setup() {
   // Compute filter coefficients (1st-order approximations)
   alpha_acc = dt / (dt + 1.0 / (2.0 * 3.14159 * fc_acc));
   alpha_vel = 1.0 / (1.0 + 1.0 / (2.0 * 3.14159 * fc_vel * dt));
-  Serial.println(alpha_acc);
-  Serial.println(alpha_vel);
 }
 
 void loop() {
@@ -105,8 +103,7 @@ void loop() {
       float apex_time = current_time - dt / 2; // interpolation approx.
 
       if ((velo_filt_prev - velocity_filt > min_velocity) && 
-          (apex_time - last_apex_time > min_dt) &&
-          (apex_time >= t_min) && (apex_time <= t_max)) {
+          (apex_time - last_apex_time > min_dt)) {
         
         last_apex_time = apex_time;
 

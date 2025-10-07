@@ -16,26 +16,25 @@ const float fs = 52.0;        // Sampling frequency (Hz)
 const float dt = 1.0 / fs;
 
 // Low-pass filter (acceleration)
-const float fc_acc = 50.0;
+const float fc_acc = 5.0;
 float alpha_acc;
 float acc_filt_prev = 0;
 
 // High-pass filter (velocity)
-const float fc_vel = 5.0;
+const float fc_vel = 50.0;
 float alpha_vel;
 float velo_filt_prev = 0;
 float velo_prev = 0;
 
 // Apex detection
 float last_apex_time = -1000.0;
-const float min_velocity = 0.02;  // m/s
 const float min_dt = 0.3;         // seconds between apices
 
 float velocity = 0;
 float velocity_filt = 0;
 
 // Buzzer
-const float filter_delay = 0.12; // seconds
+const float filter_delay = 0.034; // seconds
 bool buzzerActive = false;
 unsigned long buzzerStartTime = 0;
 const unsigned long buzzerDuration = 500; // milliseconds
@@ -45,21 +44,24 @@ bool buzzerStarted = false;
 bool inFreeFall = false;
 bool inFreeFallPrev = false;
 float freeFallStartTime = 0.0;
-const float FREEFALL_DELAY_COMP = 0.060; // seconds
-const float LAND_IMPACT_THRESH = 1.3 * g; // detect landing
+float freeFallEndTime = 0.0;
+float apex_since_freefall = 0.0;
+const float FREEFALL_DELAY_COMP = 0.0; // seconds
 
 // ==== Setup ====
 void setup() {
+  // Initialize Bluetooth
+  delay(200);
+  BLE.begin();
+  BLE.setLocalName("XIAO_IMU");
+  BLE.setAdvertisedService(imuService);
+  imuService.addCharacteristic(imuDataChar);
+  BLE.addService(imuService);
+  BLE.advertise();
+
   pinMode(buzzerPin, OUTPUT);
-  Serial.begin(115200);
   Wire.begin();
-
-  if (imu.begin() != 0) {
-    Serial.println("IMU error!");
-  } else {
-    Serial.println("IMU OK!");
-  }
-
+  imu.begin();
   configFreeFall();
 
   // Compute filter coefficients
@@ -78,7 +80,7 @@ int configFreeFall() {
   error += imu.writeRegister(LSM6DS3_ACC_GYRO_CTRL1_XL, dataToWrite);
 
   error += imu.writeRegister(LSM6DS3_ACC_GYRO_WAKE_UP_DUR, 0x00);
-  error += imu.writeRegister(LSM6DS3_ACC_GYRO_FREE_FALL, 0x70); // threshold/duration
+  error += imu.writeRegister(LSM6DS3_ACC_GYRO_FREE_FALL, 0x33); // threshold/duration
   error += imu.writeRegister(LSM6DS3_ACC_GYRO_TAP_CFG1, 0x81); // enable detection
 
   return error;
@@ -86,6 +88,8 @@ int configFreeFall() {
 
 // ==== Loop ====
 void loop() {
+  BLE.poll();
+
   static unsigned long lastMicros = 0;
   unsigned long now = micros();
 
@@ -115,22 +119,21 @@ void loop() {
     // --- Free-fall detection ---
     if (inFreeFall && !inFreeFallPrev) {
       freeFallStartTime = current_time - FREEFALL_DELAY_COMP;
-      Serial.println("🪂 Free fall detected!");
     }
-
-    inFreeFallPrev = inFreeFall;
 
     // --- Apex detection (only during free fall) ---
     if (inFreeFall) {
       if ((velo_filt_prev > 0) && (velocity_filt <= 0)) {
         float apex_time = current_time - dt / 2;
-        float apex_since_freefall = apex_time - freeFallStartTime;
+        apex_since_freefall = apex_time - freeFallStartTime + filter_delay;
 
         if ((apex_time - last_apex_time > min_dt) ) {
           last_apex_time = apex_time;
-          Serial.print("🎯 Apex detected at t = ");
-          Serial.print(apex_since_freefall, 3);
-          Serial.println(" s since free-fall start.");
+          
+          // // Send time with BLE
+          // char buf[32];
+          // snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", freeFallStartTime, apex_since_freefall, freeFallEndTime);
+          // imuDataChar.setValue(buf);
 
           // Schedule buzzer
           buzzerStartTime = millis() + filter_delay * 1000;
@@ -138,6 +141,16 @@ void loop() {
         }
       }
     }
+
+    if (!inFreeFall && inFreeFallPrev) {
+      freeFallEndTime = current_time;
+      // Send time with BLE
+      char buf[32];
+      snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", freeFallStartTime, apex_since_freefall, freeFallEndTime);
+      imuDataChar.setValue(buf);
+    }
+
+    inFreeFallPrev = inFreeFall;
 
     velo_filt_prev = velocity_filt;
 
