@@ -36,48 +36,24 @@ const float t_max = 60.0;        // stop detection
 float velocity = 0;
 float velocity_filt = 0;
 
+const float filter_delay = 0.12; // seconds
 bool buzzerActive = false;
 unsigned long buzzerStartTime = 0;
-const unsigned long buzzerDuration = 1000; // milliseconds
+const unsigned long buzzerDuration = 500; // milliseconds
+bool buzzerStarted = false;
 
 
 void setup() {
-  // Initialize Bluetooth
-  delay(200);
-  BLE.begin();
-  BLE.setLocalName("XIAO_IMU");
-  BLE.setAdvertisedService(imuService);
-  imuService.addCharacteristic(imuDataChar);
-  BLE.addService(imuService);
-  BLE.advertise();
-  //Serial.println("BLE ready");
-  
-  delay(500);
-  Serial.begin(115200);
-  while (!Serial) {
-    delay(10);  // Wait until Serial is ready
-  }
-
   pinMode(buzzerPin, OUTPUT);
   Wire.begin();
-
-  // Initialize IMU
-  if (imu.begin() != 0) {
-    Serial.println("IMU initialization failed!");
-    while (1);
-  } else {
-    Serial.println("IMU initialized!");
-  }
+  imu.begin()
 
   // Compute filter coefficients (1st-order approximations)
   alpha_acc = dt / (dt + 1.0 / (2.0 * 3.14159 * fc_acc));
   alpha_vel = 1.0 / (1.0 + 1.0 / (2.0 * 3.14159 * fc_vel * dt));
-  Serial.println(alpha_acc);
-  Serial.println(alpha_vel);
 }
 
 void loop() {
-  BLE.poll();
 
   static unsigned long lastMicros = 0;
   unsigned long now = micros();
@@ -119,29 +95,31 @@ void loop() {
           (apex_time >= t_min) && (apex_time <= t_max)) {
         
         last_apex_time = apex_time;
-        Serial.print("Apex valide détecté à t = ");
-        Serial.println(apex_time, 3);
 
         // Buzzer
         //tone(buzzerPin, 1000); // start tone
-        buzzerStartTime = millis();
+        buzzerStartTime = millis() + filter_delay*1000;
         buzzerActive = true;
       }
     }
     velo_filt_prev = velocity_filt;
 
-    //--- Debug ---
-    // Serial.print("t=");
-    // Serial.print(current_time, 2);
-    // Serial.print("  Velo_filt=");
-    // Serial.println(velocity_filt, 3);
-    char buf[32];  // plenty for 3 floats
-    snprintf(buf, sizeof(buf), "%.5f", velocity_filt);
-    imuDataChar.setValue(buf);
 
-    if (buzzerActive && millis() - buzzerStartTime >= buzzerDuration) {
-      //noTone(buzzerPin);
-      buzzerActive = false;
+    if (buzzerActive) {
+      unsigned long now_ms = millis();
+
+      // Start buzzer after scheduled delay
+      if (!buzzerStarted && now_ms >= buzzerStartTime) {
+        tone(buzzerPin, 1000);
+        buzzerStarted = true;
+      }
+
+      // Stop buzzer after duration
+      if (buzzerStarted && now_ms >= buzzerStartTime + buzzerDuration) {
+        noTone(buzzerPin);
+        buzzerActive = false;
+        buzzerStarted = false;
+      }
     }
   }
 }
