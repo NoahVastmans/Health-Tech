@@ -19,6 +19,7 @@ const float dt = 1.0 / fs;
 const float fc_acc = 5.0;
 float alpha_acc;
 float acc_filt_prev = 0;
+float acc_norm_prev = 0;
 
 // High-pass filter (velocity)
 const float fc_vel = 50.0;
@@ -42,13 +43,20 @@ unsigned long buzzerStartTime = 0;
 const unsigned long buzzerDuration = 500; // milliseconds
 bool buzzerStarted = false;
 
-const float FREEFALL_THRESH = 1.0;   // m/s² (≈0.2 g)
+// Freefall detection
+const float FREEFALL_THRESH = -7.0;   // m/s² (≈0.1 g)
+const float CATCH_THRESH = 1.0;
 const unsigned long FREEFALL_MIN = 0.040; // must stay below threshold this long
 
 bool inFreeFall = false;
 float freeFallStart = 0.0;
 float freeFallEnd = 0.0;
 float apex_since_freefall = 0.0;
+
+// Apex prediction
+float v0_release = 0.0;
+float t_pred_apex = 0.0;
+float t_pred_absolute = 0.0;
 
 void setup() {
   // Initialize Bluetooth
@@ -93,28 +101,27 @@ void loop() {
 
     // --- Low-pass filter accel ---
     float acc_filt = alpha_acc * acc_norm + (1 - alpha_acc) * acc_filt_prev;
-    acc_filt_prev = acc_filt;
 
     // --- High-pass filter velocity ---
     velocity_filt = alpha_vel * (velo_filt_prev + acc_filt * dt);
-    velo_prev = velocity;
     
     // --- Start Flight Phase ---
-    if (!inFreeFall && acc_filt < FREEFALL_THRESH) {
+    if (!inFreeFall && acc_norm < FREEFALL_THRESH) {
       // potential start
       if (freeFallStart == 0) {
         freeFallStart = current_time;
       } else if (current_time - freeFallStart > FREEFALL_MIN) {
         inFreeFall = true;
+        tone(buzzerPin,500,100);
       }
-    } else if (inFreeFall && acc_filt > FREEFALL_THRESH + 1.0) {
+    } else if (inFreeFall && acc_filt > CATCH_THRESH) {
       // end of free fall
       inFreeFall = false;
       freeFallEnd = current_time;
       
       // Send time with BLE
       char buf[32];
-      snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", freeFallStart, apex_since_freefall, freeFallEnd);
+      snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", apex_since_freefall, freeFallEnd-freeFallStart);
       imuDataChar.setValue(buf);
       
       freeFallStart = 0;
@@ -126,23 +133,23 @@ void loop() {
     // --- Apex detection (zero-crossing positive→negative) ---
     if ((velo_filt_prev > 0) && (velocity_filt <= 0)) {
       float apex_time = current_time - dt / 2; // interpolation approx.
-      apex_since_freefall = apex_time - freeFallStart + filter_delay;
-      
 
-      if ((velo_filt_prev - velocity_filt > min_velocity) && 
-          (apex_time - last_apex_time > min_dt)) {
-        // // Send time with BLE
-        // char buf[32];
-        // snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", freeFallStart, apex_since_freefall, freeFallEnd);
-        // imuDataChar.setValue(buf);
-        // last_apex_time = apex_time;
+      if ((velo_filt_prev - velocity_filt > min_velocity) && (apex_time - last_apex_time > min_dt)) {
+        
+        apex_since_freefall = apex_time - freeFallStart + filter_delay;
 
         // Buzzer
         buzzerStartTime = millis() + filter_delay*1000;
         buzzerActive = true;
       }
     }
+
+    // Update previous values
+    //inFreeFallPrev = inFreeFall;
     velo_filt_prev = velocity_filt;
+    velo_prev = velocity;
+    acc_norm_prev = acc_norm;
+    acc_filt_prev = acc_filt;
 
 
     if (buzzerActive) {
