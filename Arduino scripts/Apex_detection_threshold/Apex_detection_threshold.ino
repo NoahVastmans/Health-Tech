@@ -115,12 +115,28 @@ void loop() {
       } 
       else if (current_time - freeFallStart > FREEFALL_MIN) {
         inFreeFall = true;
+        // tone for sync beginning with video
         tone(buzzerPin,500,100);
       }
-    }
-
-    // reset if threshold not maintained long enough
-    if (!inFreeFall && acc_filt >= FREEFALL_THRESH) {
+    } 
+    // --- End Flight Phase ---
+    else if (inFreeFall && acc_norm > CATCH_THRESH) {
+      // end of free fall
+      inFreeFall = false;
+      freeFallEnd = current_time;
+      
+      // Send time with BLE
+      char buf[32];
+      snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", t_pred_apex, apex_since_freefall, freeFallEnd-freeFallStart);
+      imuDataChar.setValue(buf);
+      
+      freeFallStart = 0;
+      v0_release        = 0.0;
+      t_pred_apex       = 0.0;
+      t_pred_absolute   = 0.0;
+    } 
+    // --- Reset if threshold not maintained long enough ---
+    else if (!inFreeFall && acc_filt >= FREEFALL_THRESH) {
       freeFallStart = 0;
       v0_release = 0;
       t_pred_absolute = 0;
@@ -132,13 +148,13 @@ void loop() {
         float apex_time = current_time - dt / 2;
 
         if ((apex_time - last_apex_time > min_dt)) {
-          apex_since_freefall = apex_time - freeFallStart + filter_delay;
           last_apex_time = apex_time;
-
-          // Send time with BLE
-          char buf[32];
-          snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", v0_release, t_pred_apex, apex_since_freefall);
-          imuDataChar.setValue(buf);
+          apex_since_freefall = apex_time - freeFallStart + filter_delay;
+          
+          // // Send time with BLE
+          // char buf[32];
+          // snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", v0_release, t_pred_apex, apex_since_freefall);
+          // imuDataChar.setValue(buf);
 
           buzzerStartTime = millis() + filter_delay*1000;
           buzzerActive = true;
@@ -147,22 +163,6 @@ void loop() {
           float error = apex_time - t_pred_absolute;
         }
       }
-
-      // end of free fall
-      if (inFreeFall && acc_filt > CATCH_THRESH) {
-        inFreeFall = false;
-        freeFallEnd = current_time;
-      
-        // // Send time with BLE
-        // char buf[32];
-        // snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", t_pred_apex, apex_since_freefall, freeFallEnd-freeFallStart);
-        // imuDataChar.setValue(buf);
-      
-        freeFallStart = 0;
-        v0_release        = 0.0;
-        t_pred_apex       = 0.0;
-        t_pred_absolute   = 0.0;
-      } 
     }
     // Update previous values
     velo_filt_prev = velocity_filt;
