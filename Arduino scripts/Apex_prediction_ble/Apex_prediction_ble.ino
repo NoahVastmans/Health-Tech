@@ -194,8 +194,7 @@ void loop() {
     // Update previous values
     inFreeFallPrev = inFreeFall;
     velo_filt_prev = velocity_filt;
-    acc_norm_prev = acc_norm;
-    acc_filt_prev = acc_filt;
+    
 
     // --- Buzzer control (for scheduled events, if used) ---
     if (buzzerActive) {
