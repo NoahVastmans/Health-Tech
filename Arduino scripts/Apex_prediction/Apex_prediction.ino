@@ -145,9 +145,7 @@ void loop() {
     // --- Predicted apex buzzer ---
     if (apexPredScheduled && !apexPredSounded) {
       if (current_time >= t_pred_absolute) {
-        tone(buzzerPin, freq_pred);
-        delay(150);
-        noTone(buzzerPin);
+        tone(buzzerPin, freq_pred, 150);
         apexPredSounded = true;
         Serial.println("🔮 Predicted apex reached (theoretical).");
       }
@@ -166,9 +164,9 @@ void loop() {
           Serial.println(" s since free-fall start.");
 
           // Play different tone for measured apex
-          tone(buzzerPin, freq_real);
-          delay(150);
-          noTone(buzzerPin);
+          //tone(buzzerPin, freq_real, 200);
+          buzzerStartTime = millis() + filter_delay*1000;
+          buzzerActive = true;
 
           // Log difference between predicted and actual apex
           float error = apex_time - t_pred_absolute;
