@@ -31,8 +31,6 @@ float velo_prev = 0;
 float last_apex_time = -1000.0;
 const float min_velocity = 0.1;  // m/s
 const float min_dt = 1.0;        // s
-const float t_min = 0.0;         // start detection
-const float t_max = 60.0;        // stop detection
 
 float velocity = 0;
 float velocity_filt = 0;
@@ -110,42 +108,63 @@ void loop() {
       // potential start
       if (freeFallStart == 0) {
         freeFallStart = current_time;
-      } else if (current_time - freeFallStart > FREEFALL_MIN) {
+        v0_release = velo_filt_prev + acc_norm_prev*dt;
+        // Predict apex time (no drag)
+        t_pred_apex = v0_release / g;           // time until apex
+        t_pred_absolute = current_time + t_pred_apex;
+      } 
+      else if (current_time - freeFallStart > FREEFALL_MIN) {
         inFreeFall = true;
         tone(buzzerPin,500,100);
       }
-    } else if (inFreeFall && acc_filt > CATCH_THRESH) {
-      // end of free fall
-      inFreeFall = false;
-      freeFallEnd = current_time;
-      
-      // Send time with BLE
-      char buf[32];
-      snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", apex_since_freefall, freeFallEnd-freeFallStart);
-      imuDataChar.setValue(buf);
-      
+    }
+
+    // reset if threshold not maintained long enough
+    if (!inFreeFall && acc_filt >= FREEFALL_THRESH) {
       freeFallStart = 0;
-    } else if (!inFreeFall && acc_filt >= FREEFALL_THRESH) {
-      // reset if threshold not maintained long enough
-      freeFallStart = 0;
+      v0_release = 0;
+      t_pred_absolute = 0;
     }
 
     // --- Apex detection (zero-crossing positive→negative) ---
-    if ((velo_filt_prev > 0) && (velocity_filt <= 0)) {
-      float apex_time = current_time - dt / 2; // interpolation approx.
+    if (inFreeFall) {
+      if ((velo_filt_prev > 0) && (velocity_filt <= 0)) {
+        float apex_time = current_time - dt / 2;
 
-      if ((velo_filt_prev - velocity_filt > min_velocity) && (apex_time - last_apex_time > min_dt)) {
-        
-        apex_since_freefall = apex_time - freeFallStart + filter_delay;
+        if ((apex_time - last_apex_time > min_dt)) {
+          apex_since_freefall = apex_time - freeFallStart + filter_delay;
+          last_apex_time = apex_time;
 
-        // Buzzer
-        buzzerStartTime = millis() + filter_delay*1000;
-        buzzerActive = true;
+          // Send time with BLE
+          char buf[32];
+          snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", v0_release, t_pred_apex, apex_since_freefall);
+          imuDataChar.setValue(buf);
+
+          buzzerStartTime = millis() + filter_delay*1000;
+          buzzerActive = true;
+
+          // Log difference between predicted and actual apex
+          float error = apex_time - t_pred_absolute;
+        }
       }
-    }
 
+      // end of free fall
+      if (inFreeFall && acc_filt > CATCH_THRESH) {
+        inFreeFall = false;
+        freeFallEnd = current_time;
+      
+        // // Send time with BLE
+        // char buf[32];
+        // snprintf(buf, sizeof(buf), "%.3f, %.3f, %.3f", t_pred_apex, apex_since_freefall, freeFallEnd-freeFallStart);
+        // imuDataChar.setValue(buf);
+      
+        freeFallStart = 0;
+        v0_release        = 0.0;
+        t_pred_apex       = 0.0;
+        t_pred_absolute   = 0.0;
+      } 
+    }
     // Update previous values
-    //inFreeFallPrev = inFreeFall;
     velo_filt_prev = velocity_filt;
     velo_prev = velocity;
     acc_norm_prev = acc_norm;
