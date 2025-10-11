@@ -1,4 +1,4 @@
-# 🏀 SmartServe Ball — Apex Detection, Apex Estimation & BLE Telemetry
+# 🎾 SmartServe Ball — Apex Detection, Apex Estimation & BLE Telemetry
 
 ## 📖 Overview
 
