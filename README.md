@@ -14,6 +14,26 @@ Flight metrics are transmitted via BLE to a connected device (e.g., smartphone, 
 
 ---
 
+## 🧭 Setup Prerequisites
+
+Before you begin, make sure your development environment is correctly configured for the **Seeed XIAO BLE Sense**.
+
+1. 📘 **Read the official Seeed Studio setup guide:**  
+   👉 [https://wiki.seeedstudio.com/XIAO_BLE/](https://wiki.seeedstudio.com/XIAO_BLE/)  
+   This page explains how to properly set up the board, drivers, and Arduino environment.
+
+2. ⚙️ **Install the correct board package:**  
+   In the Arduino IDE, go to  
+   `Tools → Board → Board Manager`  
+   and install:  
+   **“Seeed nRF52 mbed-enabled Boards”**  
+   **Do not install the non-mbed version**, as it may cause upload and sensor initialization issues.
+
+Once the board package is installed, select:  
+`Tools → Board → Seeed XIAO BLE Sense`
+
+---
+
 ## ⚙️ System Features
 
 | Feature | Description |
