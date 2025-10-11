@@ -1,8 +1,8 @@
-# 🏀 Smart Ball — Flight Detection, Apex Estimation & BLE Telemetry
+# 🎾 SmartServe Ball — Apex Detection, Apex Estimation & BLE Telemetry
 
 ## 📖 Overview
 
-**Smart Ball** is an embedded system that detects and measures the motion of a thrown object using a **6-axis IMU (LSM6DS3)** and **Bluetooth Low Energy (BLE)**.
+**SmartServe Ball** is an embedded system that detects and measures the motion of a thrown object using a **6-axis IMU (LSM6DS3)** and **Bluetooth Low Energy (BLE)**.
 
 It automatically detects:
 - **Free fall start** and **catch impact**
@@ -11,6 +11,26 @@ It automatically detects:
 - And emits a **buzzer signal** for video synchronization or real-time feedback.
 
 Flight metrics are transmitted via BLE to a connected device (e.g., smartphone, PC, or logging app).
+
+---
+
+## 🧭 Setup Prerequisites
+
+Before you begin, make sure your development environment is correctly configured for the **Seeed XIAO BLE Sense**.
+
+1. 📘 **Read the official Seeed Studio setup guide:**  
+   👉 [https://wiki.seeedstudio.com/XIAO_BLE/](https://wiki.seeedstudio.com/XIAO_BLE/)  
+   This page explains how to properly set up the board, drivers, and Arduino environment.
+
+2. ⚙️ **Install the correct board package:**  
+   In the Arduino IDE, go to  
+   `Tools → Board → Board Manager`  
+   and install:  
+   **“Seeed nRF52 mbed-enabled Boards”**  
+   **Do not install the non-mbed version**, as it may cause upload and sensor initialization issues.
+
+Once the board package is installed, select:  
+`Tools → Board → Seeed XIAO BLE Sense`
 
 ---
 
@@ -41,7 +61,7 @@ Flight metrics are transmitted via BLE to a connected device (e.g., smartphone, 
 
 - **Arduino IDE 2.x**  
 - **Libraries:**
-  - `LSM6DS3` (SparkFun or Seeed version)
+  - `LSM6DS3` (Seeed version)
   - `ArduinoBLE`
   - `Wire`
 
@@ -51,18 +71,18 @@ Flight metrics are transmitted via BLE to a connected device (e.g., smartphone, 
 
 Before running this code, you **must replace** the `LSM6DS3.cpp` file in your installed library folder with the **modified version** included in this project.
 
-This modified file ensures **stable and faster sensor reads** compatible with the Smart Ball’s timing requirements.
+This modified file ensures **stable and faster sensor reads** compatible with the SmartServe Ball’s timing requirements.
 
 ### 🔹 Steps to Replace the File:
 
 1. Locate your LSM6DS3 library folder:
    - **Windows:**  
-     `Documents/Arduino/libraries/SparkFun_LSM6DS3_Arduino_Library/src/`
+     `Documents/Arduino/libraries/Seeed_Arduino_LSM6DS3/`
    - **macOS/Linux:**  
-     `~/Documents/Arduino/libraries/SparkFun_LSM6DS3_Arduino_Library/src/`
+     `~/Documents/Arduino/libraries/Seeed_Arduino_LSM6DS3/`
 
 2. Find and replace the file:
-   - Replace the original `LSM6DS3.cpp` with the version found in this Smart Ball project folder.
+   - Replace the original `LSM6DS3.cpp` with the version found in this SmartServe Ball project folder.
 
 3. Restart the Arduino IDE.
 
