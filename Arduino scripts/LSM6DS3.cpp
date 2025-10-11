@@ -87,7 +87,7 @@ status_t LSM6DS3Core::beginCore(void) {
         case I2C_MODE:
             Wire.begin();
             break;
-
+/*
         case SPI_MODE:
 #if defined(NRF52840_XXAA)
             // start the SPI library:
@@ -105,14 +105,14 @@ status_t LSM6DS3Core::beginCore(void) {
 #elif defined(ARDUINO_XIAO_RA4M1)
             // noting
 #else
-            //SPI.setBitOrder(MSBFIRST);
+            SPI.setBitOrder(MSBFIRST);
 #endif
             // Data is captured on rising edge of clock (CPHA = 0)
             // Base value of the clock is HIGH (CPOL = 1)
 
             // MODE3 for 328p operation
             #ifdef __AVR__
-           // SPI.setDataMode(SPI_MODE3);
+            SPI.setDataMode(SPI_MODE3);
             #else
             #endif
 
@@ -126,7 +126,7 @@ status_t LSM6DS3Core::beginCore(void) {
             pinMode(chipSelectPin, OUTPUT);
             digitalWrite(chipSelectPin, HIGH);
 #endif
-            break;
+            break; */
         default:
             break;
     }
