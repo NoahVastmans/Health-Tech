@@ -1,4 +1,4 @@
-# 🏓 SmartServe Ball — Intelligent Motion Tracking and Apex Detection
+# 🎾 SmartServe Ball — Intelligent Motion Cuidance and Apex Detection
 
 ## 📘 Project Overview
 
@@ -22,7 +22,7 @@ Contains all embedded code for the SmartServe Ball, including:
 - Modified **`LSM6DS3.cpp`** file required for stable IMU communication  
   *(instructions are detailed in the script-specific README inside this folder)*
 
-Each Arduino script is fully documented in-code and explained in its local README.
+Each Arduino script is fully documented in-code.
 
 ---
 
