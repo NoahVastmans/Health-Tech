@@ -44,7 +44,7 @@ const float GRAVITY_THRESHOLD = 2.0;           // m/s²
 // State tracking
 bool apexSoundTriggered = false;
 
-int config_free_fall_detect(void) {//seed sensor documentation, uses a simple low pass filter, and works to quickly identify free falling (aka ball in the air)
+int config_free_fall_detect(void) {
     uint8_t error = 0;
     uint8_t dataToWrite = 0;
 
