@@ -59,7 +59,7 @@ int config_free_fall_detect(void) {//seed sensor documentation, uses a simple lo
 }
 
 void setup() {
-    Serial.begin(115200);//updated noah code
+    Serial.begin(115200);
     while (!Serial); // Wait for serial connection
 
     // Initialize IMU
@@ -140,8 +140,8 @@ float getVerticalAcceleration() {
     filter.getQuaternion(&qw, &qx, &qy, &qz);
 
     // Rotate acceleration vector into global frame using quaternion rotation
-    //float gAx = ax * (1 - 2 * (qy * qy + qz * qz)) + ay * (2 * (qx * qy - qw * qz)) + az * (2 * (qx * qz + qw * qy));
-    //float gAy = ax * (2 * (qx * qy + qw * qz)) + ay * (1 - 2 * (qx * qx + qz * qz)) + az * (2 * (qy * qz - qw * qx));
+    float gAx = ax * (1 - 2 * (qy * qy + qz * qz)) + ay * (2 * (qx * qy - qw * qz)) + az * (2 * (qx * qz + qw * qy));
+    float gAy = ax * (2 * (qx * qy + qw * qz)) + ay * (1 - 2 * (qx * qx + qz * qz)) + az * (2 * (qy * qz - qw * qx));
     float gAz = ax * (2 * (qx * qz - qw * qy)) + ay * (2 * (qy * qz + qw * qx)) + az * (1 - 2 * (qx * qx + qy * qy));
 
     return gAz;
