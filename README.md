@@ -36,7 +36,7 @@ Includes the electrical design and assembly details:
 
 ---
 
-### 🎥 `Validation Videos and Video Tracking/`
+### 🎥 `Video Tracking/`
 Contains:
 - The **validation videos** used to visually confirm the apex timing  
 - **Video tracking scripts** for extracting apex frames and timestamps  
