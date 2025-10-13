@@ -1,4 +1,4 @@
-# 🎾 SmartServe Ball — Intelligent Motion Cuidance and Apex Detection
+# 🎾 SmartServe Ball — Intelligent Motion Guidance and Apex Detection
 
 ## 📘 Project Overview
 
@@ -47,7 +47,7 @@ This folder provides the link between **experimental results** and **sensor-base
 ---
 
 ### 📹 `SmartServe Ball - Explanation Video/`
-A short **demonstration video** summarizing the SmartServe Ball project — explaining the concept, system design, and results in a clear visual format.
+A short **demonstration video** summarizing the SmartServe Ball project — explaining the concept and system design in a clear visual format.
 
 ---
 
@@ -68,7 +68,7 @@ Includes a **concise research-style paper** presenting:
 
 ---
 
-### 🧱 `3D CAD Files/`
+### 🧱 `Prototype Sensor Case/`
 3D design files for the **protective casing** used to house the electronics inside a **tennis ball**.  
 The case ensures durability while maintaining balance and minimal aerodynamic impact.
 
