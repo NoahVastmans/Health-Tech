@@ -36,6 +36,12 @@ Includes the electrical design and assembly details:
 
 ---
 
+### 🧱 `Prototype Sensor Case/`
+3D design files for the **protective casing** used to house the electronics inside a **tennis ball**.  
+The case ensures durability while maintaining balance and minimal aerodynamic impact.
+
+---
+
 ### 🎥 `Video Tracking/`
 Contains:
 - The **validation videos** used to visually confirm the apex timing  
@@ -68,12 +74,6 @@ Includes a **concise research-style paper** presenting:
 
 ---
 
-### 🧱 `Prototype Sensor Case/`
-3D design files for the **protective casing** used to house the electronics inside a **tennis ball**.  
-The case ensures durability while maintaining balance and minimal aerodynamic impact.
-
----
-
 ### 🕰️ `Legacy/`
 Contains earlier versions of scripts and design assets intended for future development.  
 A separate README inside this folder explains each file’s purpose and how to build upon it.
@@ -86,10 +86,10 @@ A separate README inside this folder explains each file’s purpose and how to b
 |------------|--------------|
 | **Embedded Code** | Apex detection, prediction, BLE telemetry |
 | **Electronics** | IMU wiring and modular circuit design |
+| **Mechanical Design** | 3D CAD for protective case |
 | **Validation** | Video-based apex verification |
 | **Demonstration** | Project explanation video |
 | **Documentation** | Presentation slides and scientific paper |
-| **Mechanical Design** | 3D CAD for protective case |
 | **Legacy Work** | Early-stage materials for continuation |
 
 ---
