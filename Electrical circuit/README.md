@@ -50,10 +50,33 @@ To open the schematic correctly:
 
 ---
 
+## 🧱 Assembly Process
+
+The assembly was performed in several structured steps to create a compact and robust sensor module:
+
+1. **Top Layer Soldering:**  
+   The first layer of components was soldered on the **upper side** of the adaptable PCB.  
+   This included the **buzzer**, **resistor**, and **pin extensions** for the Seeed XIAO BLE Sense.
+
+2. **Power Wiring:**  
+   Next, the **power supply wires** were soldered to the corresponding **3.3V** and **GND** pins, ensuring solid electrical contact and mechanical stability.
+
+3. **Base Layer Protection:**  
+   After soldering the lower connections, a **thin layer of hot glue** was applied to the **bottom side** of the PCB to insulate and protect the solder joints.
+
+4. **Battery Holder Placement:**  
+   The **battery holder** was then positioned directly on top of the glued surface, forming the **second hardware layer** of the design.
+
+5. **Final Power Connection:**  
+   Finally, the **power wires** were soldered to the **battery holder terminals**, completing the electrical circuit and enabling portable operation.
+
+This stacked-layer assembly provided an **efficient use of space** and **robust wiring**, allowing the electronics to fit neatly inside the SmartServe Ball’s protective enclosure.
+
+---
+
 ## 📷 Assembly
 
 The `Assembly_Photos/` folder shows:
-- The **final hardware configuration** used in testing  
 - The **adaptable PCB layout**  
 - The **component placement** on both board sides  
 
