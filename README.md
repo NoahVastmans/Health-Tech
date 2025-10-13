@@ -46,7 +46,7 @@ This folder provides the link between **experimental results** and **sensor-base
 
 ---
 
-### 📹 `SmartServe Ball - Explanation Video/`
+### 📹 `Explanation Video/`
 A short **demonstration video** summarizing the SmartServe Ball project — explaining the concept and system design in a clear visual format.
 
 ---
