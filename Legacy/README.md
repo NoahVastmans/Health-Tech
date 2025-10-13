@@ -126,7 +126,7 @@ This modified file ensures **access to quaternion variables** to obtain the acce
 
 ### 9. **Apex Detection**
 - Detected when filtered velocity crosses zero (positive → negative).
-- A buzzer beep is scheduled with a delay compensation of `filter_delay` s.
+- A buzzer beep is scheduled.
 - Small threshold added for zero crossing
 
 ### 10. **Catch Detection**
