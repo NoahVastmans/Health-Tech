@@ -14,7 +14,7 @@ The system connects a **Seeed XIAO BLE Sense** microcontroller to a **buzzer** a
 | `SmartServeBall.kicad_sch` | Main circuit schematic showing all connections between the XIAO BLE Sense, IMU, and buzzer |
 | `SmartServeBall.kicad_pro` | KiCad project configuration file |
 | `Seeeduino XIAO KICAD/` | KiCad symbol and footprint files for Seeed components (used in the schematic) |
-| `Assembly Photos/` | Images of the final sensor assembly, wiring layout, and breadboard/PCB setup |
+| `Assembly Photos/` | Images of the final sensor assembly and adaptable PCB setup |
 
 ---
 
