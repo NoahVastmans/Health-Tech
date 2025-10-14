@@ -177,7 +177,7 @@ Each line corresponds to one complete throw:
 ## 🚀 Usage Steps
 
 1. Replace the **LSM6DS3.cpp** file as described above.  
-2. Open the `SmartBall.ino` sketch in Arduino IDE.  
+2. Open the `Apex_detection_and_prediction.ino` sketch in Arduino IDE.  
 3. Select your board (e.g., Seeed XIAO BLE Sense) and COM port.  
 4. Upload the sketch.  
 5. Open a BLE terminal or app (e.g., **nRF Connect**, **Serial Bluetooth Terminal**).  
