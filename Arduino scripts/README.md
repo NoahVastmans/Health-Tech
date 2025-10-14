@@ -189,9 +189,7 @@ Each line corresponds to one complete throw:
 
 - Include **gyro-based orientation** for 3D trajectory tracking.  
 - Add **drag correction** to apex prediction.  
-- Implement **BLE command interface** for tuning parameters remotely.  
-- Log data to **SD card** for offline analysis.
-
+- Store data on the **internal flash memory** of the Seeed board, allowing for **delayed Bluetooth transmission** — removing the need for a constant connection to retrieve data.
 ---
 
 ## 📄 License
