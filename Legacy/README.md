@@ -170,8 +170,8 @@ This modified file ensures **access to quaternion variables** to obtain the acce
 
 - Use a bandpass algorithm to cut off **noise frequencies** for accurate acceleration.
 - Synchronized IMU data sampling and Madgwick filter. 
-- Implement transmit via **BLE command interface** to a connected device (e.g., smartphone, PC, or logging app).
-- Log data to **SD card** for offline analysis.
+- Implement transmit via **BLE** to a connected device (e.g., smartphone, PC, or logging app).
+- Store data on the internal flash memory of the Seeed board, allowing for delayed Bluetooth transmission — removing the need for a constant connection to retrieve data.
 
 ---
 
