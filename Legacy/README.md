@@ -158,7 +158,7 @@ This modified file ensures **access to quaternion variables** to obtain the acce
 ## 🚀 Usage Steps
 
 1. Replace the **LSM6DS3.cpp** and **MadgwickAhrs.h** files as described above. 
-2. Open the `SmartBall.ino` sketch in Arduino IDE. 
+2. Open the `Apex_AHRS.ino` sketch in Arduino IDE. 
 3. Select your board (e.g., Seeed XIAO BLE Sense) and COM port. 
 4. Upload the sketch. 
 5. Open the serial monitor terminal  
